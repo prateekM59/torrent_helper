@@ -1,5 +1,4 @@
 import sys
-import urllib2
 import urllib
 import cookielib
 import re
@@ -38,15 +37,9 @@ def call_tpb(torrent):
 	# Take care of cookies handing 
 	cj = cookielib.CookieJar()
 
-	# Prepare a GET Request for TPB
-	req = urllib2.Request(url= query_string, origin_req_host= cj)
-
-	# Imposter as a browser by changing user agent
-	req.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36')
-
-	# Make the GET call and obtain response
+	# Make the GET call to TPB and obtain response
 	try:
-		response = urllib2.urlopen(req)
+		response = requests.get(query_string, cookies = cj, headers = get_headers())
 		return parse_response(response)
 	except IOError as e:
 		print "Error in connecting to TPB because: "
@@ -59,7 +52,7 @@ def call_tpb(torrent):
 # parameters: HTML response obtained by running search query on TPB
 # returns: Search results of TPB's first page with given torrent query
 def parse_response(response):
-	soup = BeautifulSoup(response.read(), 'html.parser')
+	soup = BeautifulSoup(response.text, 'html.parser')
 	
 	# TPB has a div with id 'searchResult' to show all the torrent search results
 	search = soup.find(id='searchResult')
@@ -228,9 +221,6 @@ def get_token_and_cookie(base_url):
 	# Hardcoded again. TODO: Either use CLI to get from user or read from settings
 	auth = get_utorrent_credentials()
 
-	# I tried with urllib2.HTTPBasicAuthHandler() as mentioned on https://docs.python.org/2/library/urllib2.html 
-	# but that was not working. Anyway, this looks much easier than that
-	# Added TODO: Replace all urllib2 with Requests
 	r = requests.get(token_url, auth = auth)
 
 	# We need to extract both token and cookie GUID value
