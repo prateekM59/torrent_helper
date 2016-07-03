@@ -5,9 +5,14 @@ import cookielib
 import re
 import requests
 from bs4 import BeautifulSoup
+
+# This is a debug parameter, turn it 1 for printing some debug messages
 isDebug = 0
 
 
+# Function to take the torrent search keyword as input from user 
+# parameters: None
+# returns: Name of the torrent in URL encoded format for searching in The Pirate Bay
 def get_torrent_name():
 	print "\nEnter the name of torrent to be searched: "
 	sys.stdout.flush()
@@ -18,13 +23,14 @@ def get_torrent_name():
 	return torrent 
 	
 
-
+# Function to scrape the TPB with given torrent keyword and returns results pertaining to that keyword 
+# parameters: URL Encoded torrent keyword e.g. game%20of%20thrones
+# returns: Search results of TPB's first page with given torrent query
 def call_tpb(torrent):
 
 	if(isDebug):
 		file = open("D:\Workspace\Test\Output\\torrent1.html",'r')
 		return parse_response(file)
-
 
 	# Make a query_string = 'https://pirateproxy.one/search/game%20of%20thrones'
 	query_string = 'https://pirateproxy.one/search/' + torrent
@@ -48,16 +54,23 @@ def call_tpb(torrent):
 		return None
 
 
-
+# Utility to parse HTML response of TPB results and extracts and returns torrent search data in form of rows
+# Right now it only scrapes first page of TPB search query, which is a pragmatic approach 
+# parameters: HTML response obtained by running search query on TPB
+# returns: Search results of TPB's first page with given torrent query
 def parse_response(response):
 	soup = BeautifulSoup(response.read(), 'html.parser')
 	
-	# TPB has a div with id 'searchResult' to show all the torrent search
+	# TPB has a div with id 'searchResult' to show all the torrent search results
 	search = soup.find(id='searchResult')
 	rows = search.findAll('tr')
 	return rows
 
 
+# Function to display search results on CLI in a tabular form and takes selected result from user as a number
+# parameters: List 'rows' containing parsed HTML response. Each torrent found, is represented by a row. 
+# parameters: An integer n, representing number of results on first page, it is simply len(rows)
+# returns: The row number(1 index based), which user selected for download
 def show_results(rows, n):
 	resp, start = None, 1
 	end = start + 5
@@ -85,13 +98,21 @@ def show_results(rows, n):
 		return
 
 
+# Utility to print heading for torrent search display in tabular form
+# parameters: None 
+# returns: None
 def show_header():
 	print "\n\n"
 	line_new = '{:<6} {:^70.70} {:>6} {:<0} {:<6} {:>10}'.format("S.No", "Name", "S", "/", "L", "Size")
 	print line_new
 
 
-
+# Utility to print all searched torrents in tabular form
+# Searched torrents are presented in batch of 5 at a time in CLI for user to select e.g. display results 6-10
+# parameters: rows, a List containing searched rows  
+# parameters: start, an integer indicating the start of the current batch for printing. 
+# parameters: end, an integer indicating the end of the current batch for printing.
+# returns: None
 def display_list(rows, start, end):
 	for row in range(start, end):
 		cols = rows[row].findAll('td')
@@ -116,6 +137,10 @@ def find_size(col):
 	return size
 
 
+# Wrapper function to start a torrent selected by user from a list of rows
+# parameters: List 'rows' containing parsed HTML response. Each torrent found, is represented by a row. 
+# parameters: row_no, indicating the user input for torrent selection
+# returns: None
 def start_download(rows, row_no):
 	row = rows[row_no]
 	mag_link = get_magnet_link(row)
@@ -127,7 +152,9 @@ def start_download(rows, row_no):
 		return
 
 
-
+# Calls utorrent API and adds torrent to it for downloading
+# parameters: mag_link, a magnetic link of the selected torrent
+# returns: None
 def add_to_utorrent(mag_link):
 
 	# TODO: Hardcoded to localhost:8080 now, change later to be generic and should be able to be read automatically by settings file
@@ -147,7 +174,6 @@ def add_to_utorrent(mag_link):
 
 	if(isDebug):
 		print "add_url: ", add_url
-		#add_url = 'http://localhost:8080/gui/?token=eN7edUlfWDMVWEz4ITOTGGTZ7JIH0rS26WqPXQ6E2NJwmn4kdeRRrHBxdlcAAAAA&action=add-url&s=magnet:?xt=urn:btih:fc27caac7dee5b15e234cbe5a24d85da498f6933&dn=Game+Of+Thrones+%5BRepack+By+P-G+Studio%5D&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Fopen.demonii.com%3A1337&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Fexodus.desync.com%3A6969'
 	try: 
 		r = requests.get(add_url, auth = auth, cookies = cookie, headers = headers)
 		if(isDebug):
@@ -160,23 +186,41 @@ def add_to_utorrent(mag_link):
 
 
 # HARDCODE
+# Returns IP on which utorrent is runnning
+# parameters: None
+# returns: str(IP)
 def get_ip():
 	return 'localhost'
 
+
 # HARDCODE
+# Returns port on which utorrent is runnning
+# parameters: None
+# returns: str(port)
 def get_port():
 	return '8080'
 
+
 # HARDCODE
+# Returns utorrent login credentials
+# parameters: None
+# returns: ('username', 'password')
 def get_utorrent_credentials():
 	return 'prateek', 'prateek'
 
 
+# HARDCODE
+# Returns User Agent Headers for GET requests
+# parameters: None
+# returns: dict of User-Agent
 def get_headers():
 	headers = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'}
 	return headers
 
 
+# Calls utorrent API and fetches token number and cookie associated
+# parameters: base_url for utorrent API e.g. http://localhost:8080/gui/
+# returns: (token, cookie)
 def get_token_and_cookie(base_url):
 	token_url = base_url + "token.html"
 	regex_token = r'<div[^>]*id=[\"\']token[\"\'][^>]*>([^<]*)</div>'  # could use BeautifulSoup but this works as well
@@ -198,7 +242,9 @@ def get_token_and_cookie(base_url):
 	return token, cookie
 
 
-
+# Calls utorrent API and adds torrent to it for downloading
+# parameters: mag_link, a magnetic link of the selected torrent
+# returns: None
 def get_magnet_link(row):
 	cols = row.findAll('td')
 	torrent_description = cols[1]
@@ -208,7 +254,9 @@ def get_magnet_link(row):
 	return anchors[1].attrs['href']
 
 
-
+# Driver function
+# parameters: None
+# returns: None
 def main():
 	torrent = get_torrent_name()
 	rows = call_tpb(torrent)
