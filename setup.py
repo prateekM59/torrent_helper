@@ -1,7 +1,7 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='torrent_helper',
-      version='1.0',
+      version='1.3',
       description='CLI tool for torrent download',
       long_description='A CLI/CMD tool that lets you search and download torrent without opening browser and bittorent client.',
       keywords='utorrent helper torrent helper CLI downloader windows',
@@ -14,7 +14,7 @@ setup(name='torrent_helper',
                'get_torrent=torrent_helper.command_line:download_torrent'
           ],
       },
-      packages = ['torrent_helper'],
+      packages = find_packages(),
       install_requires=[
       ],
       zip_safe=False) 

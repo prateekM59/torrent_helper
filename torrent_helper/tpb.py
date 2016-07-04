@@ -15,21 +15,24 @@ isDebug = 0
 def get_torrent_name():
 	print "\nEnter the name of torrent to be searched: "
 	sys.stdout.flush()
-	torrent = str(raw_input())
-	
-	# Perform an URL encoding for searching TPB
-	torrent = urllib.pathname2url(torrent)
-	return torrent 
+
+	resp = ""
+	while(resp == ""):
+		resp = str(raw_input())
+	else:
+		if(len(resp)):
+			# Perform an URL encoding for searching TPB
+			torrent = urllib.pathname2url(resp)
+			return torrent
+		else:
+			print "Incorrect input!!!"
+			return
 	
 
 # Function to scrape the TPB with given torrent keyword and returns results pertaining to that keyword 
 # parameters: URL Encoded torrent keyword e.g. game%20of%20thrones
 # returns: Search results of TPB's first page with given torrent query
 def call_tpb(torrent):
-
-	if(isDebug):
-		file = open("D:\Workspace\Test\Output\\torrent1.html",'r')
-		return parse_response(file)
 
 	# Make a query_string = 'https://pirateproxy.one/search/game%20of%20thrones'
 	query_string = 'https://pirateproxy.one/search/' + torrent
@@ -40,7 +43,16 @@ def call_tpb(torrent):
 	# Make the GET call to TPB and obtain response
 	try:
 		response = requests.get(query_string, cookies = cj, headers = get_headers())
-		return parse_response(response)
+		if(isDebug):
+			if(response.status_code == 200):	
+				file = open("D:\Workspace\Test\Output\\torrent2.html",'a+')
+				file.write((response.text).encode('utf-8'))
+				file.close()
+			else:
+				print "Response code is not 200."
+		parsed_response = parse_response(response)
+		return parsed_response
+
 	except IOError as e:
 		print "Error in connecting to TPB because: "
 		print e
@@ -109,7 +121,7 @@ def show_header():
 def display_list(rows, start, end):
 	for row in range(start, end):
 		cols = rows[row].findAll('td')
-		name = str(cols[1].a.string)
+		name = (cols[1].a.string).encode('utf-8')
 		seed = int(cols[2].string)
 		leech = int(cols[3].string)
 		size = find_size(cols[1])
@@ -141,7 +153,7 @@ def start_download(rows, row_no):
 	if(mag_link is not None):
 		add_to_utorrent(mag_link)
 	else:
-		print "Error in Magnetic link"
+		print "Error in Magnetic link!!!"
 		return
 
 
@@ -257,6 +269,3 @@ def main():
 
 		if(torrent_no is not None):
 			start_download(rows, torrent_no)
-
-
-main()
